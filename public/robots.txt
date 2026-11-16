@@ -1,0 +1,3 @@
+# Preview only. Do not index the replacement until the live domain is moved.
+User-agent: *
+Disallow: /
