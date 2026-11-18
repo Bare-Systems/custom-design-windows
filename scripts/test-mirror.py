@@ -2,6 +2,7 @@
 """Verify that the GitHub Pages build is the original site, not a redesign."""
 import json
 import os
+import subprocess
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
@@ -17,6 +18,13 @@ style = dist / manifest["stylesheet"]
 
 assert style.is_file(), "Original stylesheet was not copied"
 assert "const Yp=" in app, "Original React app missing"
+# The copied bundle is patched at build time: catch syntax errors before Pages deploy.
+subprocess.run(
+    ["node", "--check", str(dist / manifest["javascript"])],
+    check=True,
+)
+assert '"aria-label":"BareSystems on GitHub"' in app, "BareSystems credit must be valid JavaScript"
+
 assert "Custom Design Windows" in app, "Original content absent"
 assert "Made by BareSystems" in app, "BareSystems credit was not rendered"
 assert "https://github.com/Bare-Systems" in app, "BareSystems GitHub link missing"
