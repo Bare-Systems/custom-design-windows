@@ -45,3 +45,21 @@ jobs:
           print('INTERNAL LINKS:', [u for t,u in p.urls if t=='a' and (u.startswith('/') or 'customdesignwindows.com' in u)][:40])
           print('TOP_HTML:',open('/tmp/legacy.html').read()[:1200])
           PY
+      - name: Inspect application bundles and referenced media
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --compressed --max-time 45 -o /tmp/legacy.js https://www.customdesignwindows.com/assets/index-BIHRFfTN.js
+          curl --fail --location --compressed --max-time 45 -o /tmp/legacy.css https://www.customdesignwindows.com/assets/index-ByubpCeI.css
+          echo "BUNDLE_BYTES=$(wc -c </tmp/legacy.js) CSS_BYTES=$(wc -c </tmp/legacy.css)"
+          python3 - <<'PY'
+          import re
+          js=open('/tmp/legacy.js').read();css=open('/tmp/legacy.css').read()
+          for term in ('Learn about Custom Design Windows','Dale Ellen Iarossi','Since 1984','Est. 1984','gallery','contact','source','lirp.cdn-website.com','assets/','images/','/about','Free Consult','Solar Screen'):
+            print('HAS',repr(term),term.lower() in js.lower())
+          print('URLS:',re.findall(r'https?://[^"\s<>()]{10,160}',js)[:30])
+          print('ASSET_PATHS:',sorted(set(re.findall(r'/(?:assets|images)/[a-zA-Z0-9_./%-]{1,130}',js)))[:65])
+          print('IMAGE_NAMES:',sorted(set(re.findall(r'[a-zA-Z0-9_.%-]+\.(?:png|jpg|jpeg|svg|webp)',js)))[:70])
+          print('CSS_FONTS:',re.findall(r'url\([^)]{1,150}\)',css)[:20])
+          print('JS_HEADER:',js[:160])
+          PY
