@@ -63,3 +63,16 @@ jobs:
           print('CSS_FONTS:',re.findall(r'url\([^)]{1,150}\)',css)[:20])
           print('JS_HEADER:',js[:160])
           PY
+      - name: Inspect router and paths in compiled bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --compressed -o /tmp/routes.js https://www.customdesignwindows.com/assets/index-BIHRFfTN.js
+          python3 - <<'PY'
+          import re
+          js=open('/tmp/routes.js').read()
+          for needle in ['path:"/"','path:"/about"','path:"/gallery"','to:"/about"','href:"/about"','pathname','basename','BrowserRouter','createBrowserRouter','/about','/contact','/gallery','/reviews','/_site','Link','Navigate','RouterProvider','useRoutes']:
+            idx=js.find(needle)
+            print('ROUTE',repr(needle),idx, 'SAMPLE', js[max(0,idx-200):idx+240] if idx>=0 else '')
+          print('ALL_ABOUT_CONTEXTS', [js[max(0,m.start()-80):m.start()+90] for m in list(re.finditer('/about',js))[:10]])
+          PY
