@@ -5,6 +5,9 @@ on:
     paths:
       - '.github/workflows/mobile-diagnostics.yml'
       - 'scripts/mobile-diagnostics.mjs'
+      - 'scripts/build-mirror.py'
+      - 'scripts/test-mirror.py'
+      - 'vendor/legacy/**'
   workflow_dispatch:
 
 permissions:
