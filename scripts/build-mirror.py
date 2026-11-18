@@ -106,7 +106,7 @@ def build() -> None:
         'c.jsx("h3",{className:"font-bold mb-4",children:"Made by BareSystems"}),'
         'c.jsx("a",{href:"https://github.com/Bare-Systems",target:"_blank",'
         'rel:"noopener noreferrer",className:"inline-block",'
-        'aria-label:"BareSystems on GitHub",children:c.jsx("img",'
+        '"aria-label":"BareSystems on GitHub",children:c.jsx("img",'
         '{src:"https://avatars.githubusercontent.com/u/262714297?v=4",'
         'alt:"BareSystems bear logo",className:"w-20 mx-auto"})})]})'
     )
