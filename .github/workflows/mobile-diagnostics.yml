@@ -1,0 +1,34 @@
+name: Mobile browser diagnostics
+
+on:
+  push:
+    paths:
+      - '.github/workflows/mobile-diagnostics.yml'
+      - 'scripts/mobile-diagnostics.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browsers
+        run: |
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium webkit
+      - name: Compare deployed mirror vs original with mobile engines
+        run: node scripts/mobile-diagnostics.mjs
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-diagnostics
+          path: mobile-diagnostics/
+          if-no-files-found: ignore
