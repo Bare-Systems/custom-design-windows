@@ -12,7 +12,10 @@ base = os.getenv("SITE_BASE", "/custom-design-windows/")
 if base == "":
     base = "/custom-design-windows/"
 
-app = (dist / manifest["javascript"]).read_text()
+mirror = json.loads((dist / "mirror-manifest.json").read_text())
+assert mirror["javascript"].startswith("assets/mirror-"), "Patched JavaScript must be content-fingerprinted"
+assert not (dist / manifest["javascript"]).exists(), "Do not publish original filename for edited JavaScript"
+app = (dist / mirror["javascript"]).read_text()
 html = (dist / "index.html").read_text()
 style = dist / manifest["stylesheet"]
 
@@ -20,7 +23,7 @@ assert style.is_file(), "Original stylesheet was not copied"
 assert "const Yp=" in app, "Original React app missing"
 # The copied bundle is patched at build time: catch syntax errors before Pages deploy.
 subprocess.run(
-    ["node", "--check", str(dist / manifest["javascript"])],
+    ["node", "--check", str(dist / mirror["javascript"])],
     check=True,
 )
 assert '"aria-label":"BareSystems on GitHub"' in app, "BareSystems credit must be valid JavaScript"
@@ -48,7 +51,7 @@ for path in manifest["routes"]:
 
 assert (dist / "404.html").is_file()
 assert (dist / "robots.txt").is_file()
-assert ('"' + base + manifest["javascript"] + '"') in html, "Wrong JS path"
+assert ('"' + base + mirror["javascript"] + '"') in html, "Wrong JS path"
 assert ('"' + base + manifest["stylesheet"] + '"') in html, "Wrong CSS path"
 assert "https://vibe.filesafe.space/" not in app, "Media CDN still referenced"
 endpoint = os.environ.get("CONTACT_API_URL", "").strip()

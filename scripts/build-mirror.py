@@ -7,6 +7,7 @@ Preserves the original site's styling, content, component structure and imagery.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -125,10 +126,21 @@ def build() -> None:
     if "https://vibe.filesafe.space/" in app_file.read_text(encoding="utf-8"):
         raise ValueError("Unmigrated gallery images remain in JS")
 
+    # Every modified JS bundle gets a content-addressed path. Without this the
+    # site's original fixed Vite filename can stay cached across deployments,
+    # including a previously broken copy, especially on mobile browsers.
+    fingerprint = hashlib.sha256(app_file.read_bytes()).hexdigest()[:12]
+    compiled_js = "assets/mirror-" + fingerprint + ".js"
+    app_file.rename(DEST / compiled_js)
+    (DEST / "mirror-manifest.json").write_text(
+        json.dumps({"javascript": compiled_js, "original": manifest["javascript"]}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
     # The original HTML and CSS remain otherwise untouched.
     html = (SNAPSHOT / manifest["html"]).read_text(encoding="utf-8")
-    for file_name in (manifest["javascript"], manifest["stylesheet"]):
-        html = html.replace('"/' + file_name + '"', '"' + base + file_name + '"')
+    html = html.replace('"/' + manifest["javascript"] + '"', '"' + base + compiled_js + '"')
+    html = html.replace('"/' + manifest["stylesheet"] + '"', '"' + base + manifest["stylesheet"] + '"')
     html = html.replace('href="/favicon.svg"', 'href="' + base + 'favicon.svg"')
     for upstream, local in image_rewrites.items():
         html = html.replace(upstream, local)
