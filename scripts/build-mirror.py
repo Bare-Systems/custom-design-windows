@@ -89,6 +89,38 @@ def build() -> None:
         if app.count(legacy_call) != 1:
             raise ValueError("Cannot safely locate the original contact form POST")
         app = app.replace(legacy_call, upgraded_call)
+    # Brand attribution: replace the original "Share This Page" Houzz tile
+    # with the Bare Systems GitHub organization credit and its official avatar.
+    # Keep the adjacent credit-card acceptance tile and all page layout intact.
+    legacy_credit = (
+        'c.jsxs("div",{className:"text-center",children:['
+        'c.jsx("h3",{className:"font-bold mb-4",children:"Share This Page"}),'
+        'c.jsx("a",{href:"https://www.houzz.com",target:"_blank",'
+        'rel:"noreferrer",className:"inline-block",children:c.jsx("img",'
+        '{src:"https://vibe.filesafe.space/1777487375540227367/assets/'
+        '19533971-2662-4546-be89-ad9e0c3aa585.png",alt:"Houzz",'
+        'className:"w-20 mx-auto"})})]})'
+    )
+    replacement_credit = (
+        'c.jsxs("div",{className:"text-center",children:['
+        'c.jsx("h3",{className:"font-bold mb-4",children:"Made by BareSystems"}),'
+        'c.jsx("a",{href:"https://github.com/Bare-Systems",target:"_blank",'
+        'rel:"noopener noreferrer",className:"inline-block",'
+        'aria-label:"BareSystems on GitHub",children:c.jsx("img",'
+        '{src:"https://avatars.githubusercontent.com/u/262714297?v=4",'
+        'alt:"BareSystems bear logo",className:"w-20 mx-auto"})})]})'
+    )
+    # Image URLs are normally localized earlier in the build; match the
+    # rewritten local path as well as the unmodified original text.
+    localized_credit = legacy_credit.replace(
+        "https://vibe.filesafe.space/1777487375540227367/assets/"
+        "19533971-2662-4546-be89-ad9e0c3aa585.png",
+        base + "assets/19533971-2662-4546-be89-ad9e0c3aa585.png",
+    )
+    if app.count(localized_credit) != 1:
+        raise ValueError("Cannot locate the original Houzz share tile safely")
+    app = app.replace(localized_credit, replacement_credit)
+
     app_file.write_text(runtime + marker + app, encoding="utf-8")
     if "https://vibe.filesafe.space/" in app_file.read_text(encoding="utf-8"):
         raise ValueError("Unmigrated gallery images remain in JS")
