@@ -18,6 +18,12 @@ style = dist / manifest["stylesheet"]
 assert style.is_file(), "Original stylesheet was not copied"
 assert "const Yp=" in app, "Original React app missing"
 assert "Custom Design Windows" in app, "Original content absent"
+assert "Made by BareSystems" in app, "BareSystems credit was not rendered"
+assert "https://github.com/Bare-Systems" in app, "BareSystems GitHub link missing"
+assert "https://avatars.githubusercontent.com/u/262714297?v=4" in app, "GitHub bear avatar missing"
+assert "Share This Page" not in app, "Legacy share heading still present"
+assert "https://www.houzz.com" not in app, "Legacy Houzz link still present"
+assert "We Accept All Major Credit Cards" in app, "Adjacent payment tile was changed"
 assert "Dale Ellen Iarossi" in app, "Original company history absent"
 assert "Custom Design Windows" in html, "Original page metadata absent"
 
