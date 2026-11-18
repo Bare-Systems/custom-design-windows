@@ -80,7 +80,7 @@ export default {
     if (request.method !== "POST") {
       return json({ error: "Method not allowed." }, 405, origin, env);
     }
-    if (!env.RESEND_API_KEY || !env.CONTACT_FROM_EMAIL || !env.CONTACT_TO_EMAIL) {
+    if (!env.EMAIL || typeof env.EMAIL.send !== "function" || !env.CONTACT_FROM_EMAIL || !env.CONTACT_TO_EMAIL) {
       return json({ error: "Contact email is not configured." }, 503, origin, env);
     }
 
@@ -107,26 +107,17 @@ export default {
       "Message:",
       payload.notes,
     ].join("\n");
-    const body = {
-      from: env.CONTACT_FROM_EMAIL,
-      to: [env.CONTACT_TO_EMAIL],
-      reply_to: payload.email,
+    const email = {
+      from: { email: env.CONTACT_FROM_EMAIL, name: "Custom Design Windows" },
+      to: env.CONTACT_TO_EMAIL,
+      replyTo: payload.email,
       subject: "Custom Design Windows — " + payload.service.replace(/[\r\n]/g, " "),
       text: message,
     };
 
     try {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + env.RESEND_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) {
-        return json({ error: "Unable to send your message. Please try again." }, 502, origin, env);
-      }
+      // Native Cloudflare Email Service binding. Send only to our fixed inbox.
+      await env.EMAIL.send(email);
       return json({ ok: true }, 200, origin, env);
     } catch {
       return json({ error: "Unable to send your message. Please try again." }, 502, origin, env);

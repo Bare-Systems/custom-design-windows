@@ -4,8 +4,13 @@ compatibility_date = "2026-11-17"
 
 [vars]
 CONTACT_TO_EMAIL = "customdesignwindows1@gmail.com"
-CONTACT_FROM_EMAIL = "Custom Design Windows <inquiries@customdesignwindows.com>"
+CONTACT_FROM_EMAIL = "inquiries@customdesignwindows.com"
 ALLOWED_ORIGINS = "https://bare-systems.github.io,https://customdesignwindows.com,https://www.customdesignwindows.com"
+
+# Allow sending only to the verified destination Gmail address.
+[[send_email]]
+name = "EMAIL"
+destination_address = "customdesignwindows1@gmail.com"
 
 # After the customdesignwindows.com zone is on Cloudflare, add:
 # [[routes]]

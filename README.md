@@ -40,11 +40,11 @@ A replacement Cloudflare Worker has been scaffolded at `worker/`. It accepts the
 | --- | --- | --- |
 | `GET` | `/api/health` | Public `{"ok":true}` diagnostic |
 | `OPTIONS` | `/api/contact` | Browser CORS preflight |
-| `POST` | `/api/contact` | Validate original form payload, send via Resend, return `{"ok":true}` **only on provider acceptance** |
+| `POST` | `/api/contact` | Validate original form payload, send via Cloudflare Email Service, return `{"ok":true}` **only on provider acceptance** |
 
 The eventual URL is `https://api.customdesignwindows.com/api/contact`. The Worker sends to `customdesignwindows1@gmail.com` and sets the visitor's email as `reply_to`. Invalid input returns 400; disallowed origin 403; missing email configuration 503; upstream failure 502.
 
-**Not yet live:** The Worker needs a verified Resend sending domain and its API key before mail delivery works. By default the preview retains the original form endpoint. When you set GitHub Actions variable `CONTACT_API_URL` to the new Worker URL, the build changes the original POST to the Worker and waits for a successful HTTP response before showing the original success message.
+**Not yet live:** The Worker needs an onboarded Cloudflare Email Sending domain, a verified Gmail destination, and deployment before mail delivery works. By default the preview retains the original form endpoint. When you set GitHub Actions variable `CONTACT_API_URL` to the new Worker URL, the build changes the original POST to the Worker and waits for a successful HTTP response before showing the original success message.
 
 ### Worker configuration
 
@@ -53,17 +53,24 @@ The eventual URL is `https://api.customdesignwindows.com/api/contact`. The Worke
 | Binding | Value / purpose |
 | --- | --- |
 | `CONTACT_TO_EMAIL` | `customdesignwindows1@gmail.com` |
-| `CONTACT_FROM_EMAIL` | `Custom Design Windows <inquiries@customdesignwindows.com>` — sender must be verified with Resend |
+| `CONTACT_FROM_EMAIL` | `inquiries@customdesignwindows.com` — sender domain must be onboarded to Cloudflare Email Sending |
 | `ALLOWED_ORIGINS` | GitHub Pages preview and both production website origins |
 
-Set the **Cloudflare secret** `RESEND_API_KEY` (not in GitHub):
+The Worker uses Cloudflare's native `[[send_email]]` binding with `destination_address = "customdesignwindows1@gmail.com"`. It needs no email provider API key.
+
+**Cloudflare dashboard setup:**
+
+1. Under **Compute → Email Service → Email Routing → Destination Addresses**, add and verify your recipient inbox. Cloudflare sends a confirmation email to it.
+2. The sender domain must use Cloudflare DNS. Under **Compute → Email Service → Email Sending**, onboard `customdesignwindows.com` once the zone is active. Do **not** enable Email Routing or replace existing business MX records.
+3. Deploy the Worker after Email Service is ready:
 
 ```bash
 cd worker
 npx wrangler login
-npx wrangler secret put RESEND_API_KEY
 npx wrangler deploy
 ```
+
+To test before moving the business domain, an already-onboarded Cloudflare sender domain can be used temporarily, along with a verified address you control.
 
 Once the domain is managed as a Cloudflare zone, attach the Worker **Custom Domain** `api.customdesignwindows.com` in the dashboard, or uncomment the `[[routes]]` stanza in `wrangler.toml`. The custom domain is **not** configured yet.
 
@@ -96,7 +103,7 @@ To publish manually without CI, upload `dist/` to a static host. A production-ro
 ## Before moving the real domain
 
 1. Compare the eight routes on desktop and mobile with the current live website.
-2. Verify the email sending domain with Resend, configure the Worker, and test successful/failed submissions.
+2. Onboard the sending domain in Cloudflare, verify the recipient, configure the Worker, and test successful/failed submissions.
 3. Add bot/rate-limit protection; review customer data handling.
 4. Add the GitHub Pages custom domain `customdesignwindows.com`, set `SITE_BASE=/`, and change **website** DNS while preserving all existing email MX/SPF/DKIM records.
 5. Connect `api.customdesignwindows.com`, set `CONTACT_API_URL`, and then enable search indexing.

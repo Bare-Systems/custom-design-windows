@@ -4,8 +4,8 @@ import worker, { parseContact } from "./src/index.js";
 
 const ORIGIN = "https://bare-systems.github.io";
 const env = {
-  RESEND_API_KEY: "re_test_dummy",
-  CONTACT_FROM_EMAIL: "Custom Design Windows <inquiries@customdesignwindows.com>",
+  EMAIL: { send: async () => ({ messageId: "test-id" }) },
+  CONTACT_FROM_EMAIL: "inquiries@customdesignwindows.com",
   CONTACT_TO_EMAIL: "customdesignwindows1@gmail.com",
   ALLOWED_ORIGINS: ORIGIN + ",https://www.customdesignwindows.com",
 };
@@ -77,33 +77,29 @@ test("does not report success without delivery credentials", async () => {
   assert.deepEqual(await resp.json(), { error: "Contact email is not configured." });
 });
 
-test("sends a validated email through Resend and confirms 2xx", async t => {
-  const originalFetch = globalThis.fetch;
-  const calls = [];
-  globalThis.fetch = async (url, opts) => {
-    calls.push({ url, opts });
-    return Response.json({ id: "email-id-123" }, { status: 200 });
-  };
-  t.after(() => { globalThis.fetch = originalFetch; });
-  const resp = await worker.fetch(request("POST", sample), env);
+test("delivers native Cloudflare Email Service message with Reply-To", async () => {
+  const deliveries = [];
+  const bindings = { ...env, EMAIL: { send: async email => {
+    deliveries.push(email);
+    return { messageId: "test-message" };
+  } } };
+  const resp = await worker.fetch(request("POST", sample), bindings);
   assert.equal(resp.status, 200);
   assert.deepEqual(await resp.json(), { ok: true });
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, "https://api.resend.com/emails");
-  assert.equal(calls[0].opts.headers.Authorization, "Bearer re_test_dummy");
-  const body = JSON.parse(calls[0].opts.body);
-  assert.equal(body.to[0], env.CONTACT_TO_EMAIL);
-  assert.equal(body.from, env.CONTACT_FROM_EMAIL);
-  assert.equal(body.reply_to, "taylor@example.org");
-  assert.ok(body.text.includes("Interested in new living room shades."));
-  assert.equal(body.text.includes("ignored_tracking_id"), false);
+  assert.equal(deliveries.length, 1);
+  const email = deliveries[0];
+  assert.equal(email.to, env.CONTACT_TO_EMAIL);
+  assert.deepEqual(email.from, { email: env.CONTACT_FROM_EMAIL, name: "Custom Design Windows" });
+  assert.equal(email.replyTo, "taylor@example.org");
+  assert.ok(email.text.includes("Interested in new living room shades."));
+  assert.equal(email.text.includes("ignored_tracking_id"), false);
 });
 
-test("returns 502 rather than a false success on upstream failure", async t => {
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => Response.json({ error: "Unauthorized" }, { status: 401 });
-  t.after(() => { globalThis.fetch = originalFetch; });
-  const resp = await worker.fetch(request("POST", sample), env);
+test("rejects a failed Cloudflare Email Service send instead of reporting success", async () => {
+  const bindings = { ...env, EMAIL: { send: async () => {
+    throw Object.assign(new Error("Recipient not verified"), { code: "E_RECIPIENT_NOT_ALLOWED" });
+  } } };
+  const resp = await worker.fetch(request("POST", sample), bindings);
   assert.equal(resp.status, 502);
   assert.match((await resp.json()).error, /Unable to send/);
 });
