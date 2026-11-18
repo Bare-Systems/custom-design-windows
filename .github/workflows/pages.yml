@@ -1,4 +1,4 @@
-name: Build and deploy website
+name: Mirror and deploy original website
 
 on:
   push:
@@ -25,14 +25,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-      - name: Test routes and content
-        run: npm test
-      - name: Build site
+      - name: Verify contact Worker contract
+        run: node --test worker/index.test.js
+      - name: Test production-domain routing and API contract
+        env:
+          SITE_BASE: /
+          CONTACT_API_URL: https://api.customdesignwindows.com/api/contact
+        run: |
+          python3 scripts/build-mirror.py
+          python3 scripts/test-mirror.py
+      - name: Build original website for GitHub Pages
         env:
           SITE_BASE: ${{ vars.SITE_BASE || '/custom-design-windows/' }}
-        run: npm run build
+          CONTACT_API_URL: ${{ vars.CONTACT_API_URL || '' }}
+          ALLOW_INDEXING: ${{ vars.ALLOW_INDEXING || '0' }}
+        run: |
+          python3 scripts/build-mirror.py
+          python3 scripts/test-mirror.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

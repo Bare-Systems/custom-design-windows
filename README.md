@@ -1,107 +1,104 @@
-# Custom Design Windows
+# Custom Design Windows — faithful production-site mirror
 
-Responsive static website starter for **Custom Design Windows**, a Fort Lauderdale custom window-treatment studio established in 1984. Recreates the **structure and key business information** of [customdesignwindows.com](https://www.customdesignwindows.com/) with a new React/Vite design.
+**Original:** https://www.customdesignwindows.com/  
+**GitHub Pages preview:** https://bare-systems.github.io/custom-design-windows/
 
-**Preview target:** https://bare-systems.github.io/custom-design-windows/ (requires GitHub Pages to be enabled in repository Settings).  
-**Original production site:** https://www.customdesignwindows.com/ — **do not redirect this domain yet**.
-
-## What's included
-
-- Seven matching page routes: `/`, `/about`, `/window-treatments`, `/gallery`, `/reviews`, `/custom-window-treatments-faq-fort-lauderdale-`, `/contact`.
-- Existing business details, services, founder history, consultation offer, and the core FAQ topics.
-- Ten **real photos linked from the original site's gallery**, with category filtering and responsive images. The full original gallery contains more; migration is incomplete.
-- Mobile navigation, phone/email links, page-specific titles/descriptions, semantic HTML, and responsive layouts.
-- Client-side contact form that **opens the visitor's email application**. It does not send messages itself; there is no backend or data storage.
-- Deliberately **no fabricated testimonials**. The Reviews page links to the existing site until verified quotes can be migrated.
-
-### Pages
-
-| Route | Content |
-| --- | --- |
-| `/` | Hero, service overview, gallery preview, introduction, consultation CTA |
-| `/about` | Dale Ellen Iarossi, WFCP; business history and approach |
-| `/window-treatments` | Draperies, shades/blinds, top treatments, accessories, commercial work |
-| `/gallery` | Selected photos from the legacy website (filterable) |
-| `/reviews` | Verified-review migration placeholder, legacy-site link |
-| `/custom-window-treatments-faq-fort-lauderdale-` | Answers to core questions from the legacy FAQ |
-| `/contact` | Phone, email, office information, email-compose inquiry form |
+This project now serves a snapshot of the **original site's actual compiled React app**, styling, copy, navigation, and images. It is **not a new design**. The repository contains the original HTML, compiled JavaScript/CSS, and 19 copied images under `vendor/legacy/`.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  Visitors[Visitors] --> Pages[GitHub Pages]
-  Repo[GitHub source] --> CI[GitHub Actions]
-  CI -->|Test + Vite build| Pages
-  Pages --> Assets[Static HTML / React / CSS]
-  Assets --> Media[Legacy photo CDN - temporary dependency]
-  Assets --> Mail[User's email app - mailto inquiry]
-```
-
-No API, database, or Cloudflare configuration is required for this initial website. The existing domain and its email hosting are **not** modified.
-
-## Development
-
-Requires Node.js 22+:
-
-```bash
-npm install
-npm run dev
-npm test
-npm run build
-npm run preview
-```
-
-Vite compiles **multiple real HTML entries**, rather than relying on history-fallback SPA routing. The seven existing paths resolve directly on GitHub Pages, including on refresh.
-
-For the repository Pages project URL, the base path defaults to `/custom-design-windows/`. To build for the custom domain root later:
-
-```bash
-SITE_BASE=/ npm run build
-```
-
-Update the GitHub Actions repository **variable** `SITE_BASE` to `/` when ready to deploy to `customdesignwindows.com`.
-
-## GitHub Pages deployment
-
-Workflow: [`.github/workflows/pages.yml`](.github/workflows/pages.yml)
-
-1. Repository **Settings → Pages → Build and deployment → Source → GitHub Actions**.
-2. Push to `main` (or run **Actions → Build and deploy website → Run workflow**).
-3. The workflow installs packages under Node 22, runs tests, builds all HTML entries to `dist/`, and deploys the resulting artifact.
-
-**No GitHub secrets are required.** `SITE_BASE` is optional for preview (defaults to `/custom-design-windows/`). Nothing in this workflow touches the production DNS.
-
-To build locally without CI, run `npm install && npm test && npm run build`. A manual GitHub Pages deployment can use a `gh-pages` branch (e.g. `npx --yes gh-pages -d dist -b gh-pages`) after changing Pages **Source** to **Deploy from a branch** and selecting `gh-pages` root. Switch back to **GitHub Actions** to restore the workflow.
-
-## Production cutover checklist
-
-**Do not cut over yet.** Before moving the existing domain:
-
-1. **Export and self-host all original portfolio images.** The starter currently hotlinks ten originals from `lirp.cdn-website.com`; shutting down the former site/media service could break them. Put owned files under `public/images/` and update `src/data.js`. The legacy gallery contains more photographs to migrate.
-2. Retrieve and verify original testimonials; replace the Reviews placeholder and legacy-site link.
-3. Decide whether to implement a real server-backed contact form (e.g. Cloudflare Worker + email provider) or keep the email-compose behavior. The current form **does not submit** to a server.
-4. Confirm service descriptions, business contact/address, and any legal/privacy information with the business owner.
-5. Switch `SITE_BASE=/`, add an appropriate `public/CNAME`, configure GitHub Pages **Custom domain**, then update DNS as directed by GitHub. Do not change MX/email DNS records when migrating web hosting.
-6. Remove preview-only `noindex,nofollow` meta tags from the seven HTML files and replace `public/robots.txt` with a production crawl policy. Add the canonical production URL / sitemap when ready. Consider redirects from old URL variations.
-
-## Structure
-
 ```text
-index.html                         Home
-about/index.html                   One real HTML entry per route
-window-treatments/index.html
-gallery/index.html
-reviews/index.html
-custom-window-treatments-faq-fort-lauderdale-/index.html
-contact/index.html
-src/main.jsx                       React components / contact email composer
-src/data.js                        Business information, gallery images, services, FAQs
-src/styles.css                     Responsive design system
-public/favicon.svg                 Original site icon
-vite.config.js                     Multi-page build / SITE_BASE
-tests/site.test.js                 Content and routing checks
-.github/workflows/pages.yml        CI/CD
+www.customdesignwindows.com (original)
+                |
+     scripts/import-original.py
+                |
+          vendor/legacy/
+     original HTML + React JS
+      original CSS + 19 photos
+                |
+       scripts/build-mirror.py
+        URLs / routes rebased
+                |
+              dist/
+                |
+      GitHub Actions → Pages
+                |
+bare-systems.github.io/custom-design-windows/
 ```
 
-Original website content and media were used as references for this family-owned replacement. Verify image ownership and vendor licensing before production.
+The build adjusts absolute paths for the GitHub Pages project preview, rewrites original image URLs to self-hosted asset paths, and generates HTML entries for **all eight original routes**: `/`, `/about`, `/window-treatments`, `/solar-screen-shades`, `/gallery`, `/reviews`, `/custom-window-treatments-faq-fort-lauderdale-`, and `/contact`.
+
+This is a **compiled snapshot**, not the original unminified React source repository. The captured app is faithful in appearance and content but harder to maintain at a component level without obtaining the original source.
+
+## Contact form / Cloudflare API
+
+The original contact form posts a LeadConnector-style payload to `https://backend.leadconnectorhq.com/external-tracking/events`. It includes `formData.first_name`, `email`, `phone`, `contact.service_needed`, and `contact.contact_notes`, as well as tracking metadata. The **original frontend does not verify the HTTP response** before reporting success; email delivery by that service cannot be established from the browser bundle alone.
+
+A replacement Cloudflare Worker has been scaffolded at `worker/`. It accepts the **same** form payload:
+
+| Method | Route | Behavior |
+| --- | --- | --- |
+| `GET` | `/api/health` | Public `{"ok":true}` diagnostic |
+| `OPTIONS` | `/api/contact` | Browser CORS preflight |
+| `POST` | `/api/contact` | Validate original form payload, send via Resend, return `{"ok":true}` **only on provider acceptance** |
+
+The eventual URL is `https://api.customdesignwindows.com/api/contact`. The Worker sends to `customdesignwindows1@gmail.com` and sets the visitor's email as `reply_to`. Invalid input returns 400; disallowed origin 403; missing email configuration 503; upstream failure 502.
+
+**Not yet live:** The Worker needs a verified Resend sending domain and its API key before mail delivery works. By default the preview retains the original form endpoint. When you set GitHub Actions variable `CONTACT_API_URL` to the new Worker URL, the build changes the original POST to the Worker and waits for a successful HTTP response before showing the original success message.
+
+### Worker configuration
+
+`worker/wrangler.toml` contains:
+
+| Binding | Value / purpose |
+| --- | --- |
+| `CONTACT_TO_EMAIL` | `customdesignwindows1@gmail.com` |
+| `CONTACT_FROM_EMAIL` | `Custom Design Windows <inquiries@customdesignwindows.com>` — sender must be verified with Resend |
+| `ALLOWED_ORIGINS` | GitHub Pages preview and both production website origins |
+
+Set the **Cloudflare secret** `RESEND_API_KEY` (not in GitHub):
+
+```bash
+cd worker
+npx wrangler login
+npx wrangler secret put RESEND_API_KEY
+npx wrangler deploy
+```
+
+Once the domain is managed as a Cloudflare zone, attach the Worker **Custom Domain** `api.customdesignwindows.com` in the dashboard, or uncomment the `[[routes]]` stanza in `wrangler.toml`. The custom domain is **not** configured yet.
+
+The optional **Deploy contact API Worker (manual)** workflow needs GitHub Actions secrets `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`. It is deliberately manual-only until configured. Implement bot protection/rate limits before production; CORS alone is not spam protection.
+
+## GitHub Pages CI and manual deployment
+
+The `.github/workflows/pages.yml` workflow runs on every push to `main`, tests the Worker with Node.js 22, builds/tests the faithful mirror for both root and preview paths, and deploys the generated `dist/` artifact to GitHub Pages.
+
+GitHub Actions **repository variables**:
+
+| Variable | Preview default | Production setting |
+| --- | --- | --- |
+| `SITE_BASE` | `/custom-design-windows/` | `/` |
+| `CONTACT_API_URL` | unset (original endpoint) | `https://api.customdesignwindows.com/api/contact` after Worker is ready |
+| `ALLOW_INDEXING` | `0` | `1` only after domain cutover |
+
+No repository secret is needed for Pages itself.
+
+To build and test locally (Python 3 + Node.js 22):
+
+```bash
+python3 scripts/build-mirror.py
+python3 scripts/test-mirror.py
+node --test worker/index.test.js
+```
+
+To publish manually without CI, upload `dist/` to a static host. A production-root build uses `SITE_BASE=/ python3 scripts/build-mirror.py`. The original site can be recaptured through **Actions → Capture original website assets → Run workflow**, or by running `python3 scripts/import-original.py` and committing `vendor/legacy/`.
+
+## Before moving the real domain
+
+1. Compare the eight routes on desktop and mobile with the current live website.
+2. Verify the email sending domain with Resend, configure the Worker, and test successful/failed submissions.
+3. Add bot/rate-limit protection; review customer data handling.
+4. Add the GitHub Pages custom domain `customdesignwindows.com`, set `SITE_BASE=/`, and change **website** DNS while preserving all existing email MX/SPF/DKIM records.
+5. Connect `api.customdesignwindows.com`, set `CONTACT_API_URL`, and then enable search indexing.
+
+**The existing production website, DNS, and business email setup have not been changed.**
